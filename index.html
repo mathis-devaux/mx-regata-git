@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <title>MX Régata — Procédure de départ</title>
+  <link rel="icon" href="icon.png" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --navy:       #07111f;
+      --navy-card:  #0d1e32;
+      --navy-mid:   #112240;
+      --border:     rgba(255,255,255,0.08);
+      --gold:       #e8b84b;
+      --text:       #e8edf5;
+      --text-sec:   #7a93b0;
+      --green:      #22c55e;
+      --red:        #ef4444;
+      --blue-acc:   #3b82f6;
+      --radius-lg:  18px;
+      --radius-md:  12px;
+    }
+
+    body {
+      background: var(--navy);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Header ─────────────────────────────────────────── */
+    .app-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 18px;
+      border-bottom: 1px solid var(--border);
+      background: var(--navy-card);
+    }
+    .app-icon {
+      width: 32px; height: 32px;
+      border-radius: 8px;
+      object-fit: cover;
+    }
+    .app-logo {
+      flex: 1;
+      font-size: 17px;
+      font-weight: 800;
+      letter-spacing: 0.05em;
+      color: var(--gold);
+    }
+    .app-logo span { color: var(--text-sec); font-weight: 400; font-size: 13px; margin-left: 4px; }
+    #status-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--text-sec);
+      transition: background .4s;
+    }
+
+    /* ── Tab bar ─────────────────────────────────────────── */
+    .tab-bar {
+      display: flex;
+      background: var(--navy-card);
+      border-bottom: 1px solid var(--border);
+    }
+    .tab-btn {
+      flex: 1;
+      padding: 12px;
+      background: none;
+      border: none;
+      color: var(--text-sec);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: color .2s, border-color .2s;
+    }
+    .tab-btn.active { color: var(--gold); border-bottom-color: var(--gold); }
+
+    /* ── Views ───────────────────────────────────────────── */
+    .view { display: none; flex: 1; overflow-y: auto; padding: 16px; gap: 14px; flex-direction: column; }
+    .view.active { display: flex; }
+
+    /* ── Cards ───────────────────────────────────────────── */
+    .card {
+      background: var(--navy-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 16px;
+    }
+    .card-label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--text-sec);
+      margin-bottom: 10px;
+    }
+
+    /* ── Chrono ──────────────────────────────────────────── */
+    .chrono-card { text-align: center; background: var(--navy-mid); }
+    .chrono-main {
+      font-size: clamp(54px, 15vw, 84px);
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+      font-family: "SF Mono", "Fira Code", ui-monospace, monospace;
+      line-height: 1;
+      letter-spacing: -0.02em;
+    }
+    .chrono-main.pre    { color: var(--gold); }
+    .chrono-main.racing { color: var(--green); }
+    .chrono-main.idle   { color: var(--text-sec); }
+    .chrono-sub { font-size: 13px; color: var(--text-sec); margin-top: 6px; }
+
+    /* ── Badges ──────────────────────────────────────────── */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 9px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .04em;
+    }
+    .badge-raise  { background: rgba(34,197,94,.15);  color: var(--green); border: 1px solid rgba(34,197,94,.3); }
+    .badge-lower  { background: rgba(239,68,68,.15);  color: var(--red);   border: 1px solid rgba(239,68,68,.3); }
+    .badge-signal { background: rgba(59,130,246,.15); color: #93c5fd;      border: 1px solid rgba(59,130,246,.25); }
+
+    /* ── Current step card ───────────────────────────────── */
+    .step-current { display: flex; align-items: flex-start; gap: 12px; }
+    .step-dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      background: var(--gold);
+      flex-shrink: 0;
+      margin-top: 4px;
+      box-shadow: 0 0 8px var(--gold);
+    }
+    .step-title { font-size: 15px; font-weight: 700; }
+    .step-meta  { font-size: 12px; color: var(--text-sec); margin-top: 3px; }
+
+    /* ── Next action hero ────────────────────────────────── */
+    .next-card {
+      background: linear-gradient(135deg, #0d1e32 0%, #112240 100%);
+      border: 1px solid rgba(232,184,75,0.2);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    }
+    .next-countdown {
+      font-size: clamp(32px, 9vw, 48px);
+      font-weight: 800;
+      font-family: "SF Mono", "Fira Code", ui-monospace, monospace;
+      color: var(--gold);
+      letter-spacing: -0.02em;
+      margin-bottom: 16px;
+    }
+
+    .next-flag-area {
+      display: flex;
+      gap: 20px;
+      align-items: flex-start;
+    }
+
+    /* Flag with pole */
+    .flag-display { position: relative; flex-shrink: 0; padding-left: 12px; }
+    .flag-pole {
+      position: absolute;
+      left: 0; top: 0; bottom: 0;
+      width: 4px;
+      background: linear-gradient(180deg, #aab8c8 0%, #4a6070 100%);
+      border-radius: 2px;
+    }
+    .flag-pole::before {
+      content: '';
+      position: absolute;
+      top: -5px; left: 50%;
+      transform: translateX(-50%);
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--gold);
+      box-shadow: 0 0 6px var(--gold);
+    }
+    .flag-img-wrap {
+      width: 156px;
+      height: 104px;
+      border-radius: 4px;
+      overflow: hidden;
+      box-shadow: 3px 4px 18px rgba(0,0,0,0.55), inset 0 0 0 1px rgba(255,255,255,0.1);
+      background: #fff;
+    }
+    .flag-img-wrap img {
+      width: 100%; height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    @keyframes wave {
+      0%   { transform: skewY(0deg)    scaleX(1); }
+      25%  { transform: skewY(1.8deg)  scaleX(0.97); }
+      50%  { transform: skewY(0deg)    scaleX(1); }
+      75%  { transform: skewY(-1.8deg) scaleX(0.97); }
+      100% { transform: skewY(0deg)    scaleX(1); }
+    }
+    .flag-img-wrap.waving { animation: wave 2.4s ease-in-out infinite; transform-origin: left center; }
+
+    .next-flag-info { flex: 1; min-width: 0; }
+    .next-flag-name {
+      font-size: 20px;
+      font-weight: 800;
+      line-height: 1.2;
+      margin-bottom: 6px;
+    }
+    .next-flag-desc {
+      font-size: 12px;
+      color: var(--text-sec);
+      line-height: 1.5;
+      margin-bottom: 12px;
+    }
+
+    /* ── Signal display (Morse style) ────────────────────── */
+    .signal-display {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      background: rgba(59,130,246,0.08);
+      border: 1px solid rgba(59,130,246,0.2);
+      border-radius: var(--radius-md);
+      margin-top: 10px;
+    }
+    .morse {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .morse-dot {
+      width: 13px; height: 13px;
+      border-radius: 50%;
+      background: #3b82f6;
+      box-shadow: 0 0 6px rgba(59,130,246,0.6);
+      flex-shrink: 0;
+    }
+    .morse-dash {
+      width: 36px; height: 7px;
+      border-radius: 4px;
+      background: #3b82f6;
+      box-shadow: 0 0 6px rgba(59,130,246,0.6);
+      flex-shrink: 0;
+    }
+    .signal-label { font-size: 12px; color: #93c5fd; font-weight: 600; }
+
+    @keyframes signal-pulse {
+      0%   { box-shadow: 0 0 0 0   rgba(59,130,246,0.7); }
+      70%  { box-shadow: 0 0 0 14px rgba(59,130,246,0); }
+      100% { box-shadow: 0 0 0 0   rgba(59,130,246,0); }
+    }
+    .signal-display.firing { animation: signal-pulse 0.9s ease-out; }
+
+    .next-step-detail {
+      font-size: 12px;
+      color: var(--text-sec);
+      margin-top: 9px;
+      font-style: italic;
+    }
+
+    /* Race started */
+    .race-started { text-align: center; padding: 10px 0; }
+    .race-started-icon  { font-size: 46px; margin-bottom: 8px; }
+    .race-started-title { font-size: 22px; font-weight: 800; color: var(--green); margin-bottom: 5px; }
+    .race-started-sub   { font-size: 13px; color: var(--text-sec); }
+
+    /* ── Controls ────────────────────────────────────────── */
+    .controls { display: flex; gap: 10px; }
+    .btn {
+      flex: 1;
+      padding: 14px 8px;
+      border-radius: var(--radius-md);
+      border: none;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform .1s, opacity .15s;
+      letter-spacing: .02em;
+    }
+    .btn:active { transform: scale(0.95); }
+    .btn-primary   { background: var(--gold); color: #07111f; }
+    .btn-secondary { background: var(--navy-mid); color: var(--text); border: 1px solid var(--border); }
+    .btn-accent    { background: rgba(59,130,246,.15); color: #93c5fd; border: 1px solid rgba(59,130,246,.25); }
+
+    /* ── Recorded times ──────────────────────────────────── */
+    .time-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 14px;
+    }
+    .time-item:last-child { border-bottom: none; }
+    .time-rank { color: var(--text-sec); }
+    .time-val  { font-family: monospace; font-size: 15px; font-weight: 700; }
+    .time-empty { color: var(--text-sec); font-size: 14px; padding: 6px 0; }
+
+    /* ── Flags tab ───────────────────────────────────────── */
+    .flags-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(155px, 1fr));
+      gap: 12px;
+    }
+    .flag-card {
+      background: var(--navy-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      transition: border-color .2s, transform .2s;
+    }
+    .flag-card:hover { border-color: rgba(232,184,75,.4); transform: translateY(-2px); }
+    .flag-card-img {
+      background: #fff;
+      aspect-ratio: 3 / 2;
+      overflow: hidden;
+    }
+    .flag-card-img img {
+      width: 100%; height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    .flag-card-body  { padding: 10px 12px 12px; }
+    .flag-card-name  { font-size: 13px; font-weight: 700; margin-bottom: 4px; }
+    .flag-card-desc  { font-size: 11px; color: var(--text-sec); line-height: 1.4; }
+    .flag-card-signal {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 8px;
+      font-size: 11px;
+      color: #93c5fd;
+      background: rgba(59,130,246,.1);
+      border: 1px solid rgba(59,130,246,.2);
+      border-radius: 20px;
+      padding: 3px 9px;
+    }
+    .flag-card-signal .morse-dot {
+      width: 8px; height: 8px;
+      box-shadow: none;
+    }
+    .flag-card-signal .morse-dash {
+      width: 18px; height: 4px;
+      box-shadow: none;
+    }
+  </style>
+</head>
+<body>
+
+<header class="app-header">
+  <img class="app-icon" src="icon.png" alt="MX Régata" />
+  <div class="app-logo">MX RÉGATA <span>/ Départ</span></div>
+  <div id="status-dot"></div>
+</header>
+
+<div class="tab-bar">
+  <button class="tab-btn active" onclick="switchTab('procedure')">⛵ Procédure</button>
+  <button class="tab-btn" onclick="switchTab('flags')">🚩 Pavillons</button>
+</div>
+
+<!-- ══════════════════ PROCEDURE ══════════════════ -->
+<div class="view active" id="view-procedure">
+
+  <div class="card chrono-card">
+    <div class="chrono-main idle" id="chrono-display">−06:00</div>
+    <div class="chrono-sub" id="chrono-sub">Prêt à démarrer</div>
+  </div>
+
+  <div class="card">
+    <div class="card-label">Étape actuelle</div>
+    <div id="current-step-content">
+      <div class="step-current">
+        <div class="step-dot" style="background:var(--text-sec);box-shadow:none;margin-top:4px"></div>
+        <div>
+          <div class="step-title">En attente</div>
+          <div class="step-meta">Appuyez sur Démarrer pour lancer la procédure à −06:00</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card next-card">
+    <div class="card-label">Prochaine action dans</div>
+    <div class="next-countdown" id="next-countdown">—</div>
+    <div id="next-action-content"></div>
+  </div>
+
+  <div class="controls">
+    <button class="btn btn-primary"   id="btn-startstop" onclick="toggleTimer()">Démarrer</button>
+    <button class="btn btn-secondary" onclick="resetTimer()">↺ Reset</button>
+    <button class="btn btn-accent"    onclick="recordTime()">⏱ Temps</button>
+  </div>
+
+  <div class="card">
+    <div class="card-label">Temps enregistrés</div>
+    <div id="times-list"><div class="time-empty">Aucun temps enregistré</div></div>
+  </div>
+
+</div>
+
+<!-- ══════════════════ FLAGS ══════════════════ -->
+<div class="view" id="view-flags">
+  <div class="card-label" style="padding:4px 4px 0">Référence des pavillons</div>
+  <div class="flags-grid" id="flags-grid"></div>
+</div>
+
+
+<script>
+// ════════════════════════════════════════════════════
+// DATA
+// ════════════════════════════════════════════════════
+
+const FLAGS = {
+  ap: {
+    name: "AP — Aperçu",
+    img: "flags/flag_apercu.png",
+    description: "Report ou retard de course. Seul = report indéfini ; avec un pavillon de classe = report d'une heure.",
+    signal: "double",
+  },
+  class: {
+    name: "Classe / Club",
+    img: "flags/flag_classe_club.png",
+    description: "Pavillon de classe ou de club. Hissé au signal d'avertissement (−5 min) et affalé au départ.",
+    signal: "short",
+  },
+  prep: {
+    name: "P / I / Z / Noir",
+    img: "flags/flag_preparatoires.png",
+    description: "Pavillon préparatoire. P = règle standard ; I = extrémité extérieure ; Z = pénalité 20% ; Noir = DSQ immédiat.",
+    signal: "short",
+  },
+  p: {
+    name: "P — Préparatoire",
+    img: "flags/flag_p.png",
+    description: "Signal préparatoire standard. Tout concurrent sous la ligne au départ doit repartir depuis la position correcte.",
+    signal: "short",
+  },
+  i: {
+    name: "I — Règle de la ligne",
+    img: "flags/flag_i.png",
+    description: "Dans la dernière minute, tout concurrent sous la ligne ou ses prolongements doit repasser par une extrémité extérieure.",
+    signal: "short",
+  },
+  z: {
+    name: "Z — Pénalité 20 %",
+    img: "flags/flag_z.png",
+    description: "Concurrent sous la ligne dans la dernière minute : pénalité de 20 % sur le score, sans possibilité de réparation.",
+    signal: "short",
+  },
+  black: {
+    name: "Pavillon Noir",
+    img: "flags/flag_black.png",
+    description: "Tout concurrent sous la ligne dans la dernière minute est disqualifié sans possibilité de réparation (RV 30.3).",
+    signal: "short",
+  },
+  blue: {
+    name: "Bleu — Arrivée",
+    img: "flags/flag_blue.png",
+    description: "Pavillon d'arrivée. Hissé sur le bateau comité à l'arrivée.",
+    signal: "none",
+  },
+  x: {
+    name: "X — Rappel individuel",
+    img: "flags/flag_x.png",
+    description: "Un ou plusieurs concurrents sont partis en avance. Les bateaux concernés doivent revenir et repartir correctement.",
+    signal: "short",
+  },
+  sub1: {
+    name: "1er Substitut — Rappel général",
+    img: "flags/flag_first_sub.png",
+    description: "Trop de bateaux sous la ligne. Tous les concurrents retournent et une nouvelle procédure est lancée.",
+    signal: "double",
+  },
+  y: {
+    name: "Y — Gilet obligatoire",
+    img: "flags/flag_y.png",
+    description: "Port du gilet de sauvetage ou de la combinaison de survie obligatoire pour tous les concurrents.",
+    signal: "none",
+  },
+  l: {
+    name: "L — Follow Me",
+    img: "flags/flag_l.png",
+    description: "À terre : avis affiché. En mer : approchez le bateau comité pour recevoir des instructions.",
+    signal: "none",
+  },
+};
+
+// FLAGS shown in the reference grid (all except 'prep' which is a composite)
+const FLAGS_GRID_ORDER = ['ap','class','p','i','z','black','blue','x','sub1','y','l'];
+
+const STEPS = [
+  { triggerSecond: -359, title: "Début procédure",       flagId: "ap",    action: "lower", signal: "double", detail: "Affalez l'aperçu — 6 minutes avant le départ." },
+  { triggerSecond: -300, title: "Signal d'avertissement", flagId: "class", action: "raise", signal: "short",  detail: "Hissez le pavillon de classe ou de club." },
+  { triggerSecond: -240, title: "Signal préparatoire",    flagId: "prep",  action: "raise", signal: "short",  detail: "Hissez le pavillon préparatoire choisi." },
+  { triggerSecond:  -60, title: "Minute finale",          flagId: "prep",  action: "lower", signal: "long",   detail: "Affalez le pavillon préparatoire. Signal long." },
+  { triggerSecond:    0, title: "DÉPART",                 flagId: "class", action: "lower", signal: "short",  detail: "Affalez le pavillon de classe. Départ lancé !" },
+];
+
+// ════════════════════════════════════════════════════
+// AUDIO
+// ════════════════════════════════════════════════════
+
+let audioCtx = null;
+
+function getAudio() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  return audioCtx;
+}
+
+function playTone(freq, duration, t0) {
+  const ctx = getAudio();
+  const osc  = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.connect(gain);
+  gain.connect(ctx.destination);
+  osc.type = 'sine';
+  osc.frequency.value = freq;
+  gain.gain.setValueAtTime(0, t0);
+  gain.gain.linearRampToValueAtTime(0.5, t0 + 0.03);
+  gain.gain.setValueAtTime(0.5, t0 + duration - 0.07);
+  gain.gain.linearRampToValueAtTime(0, t0 + duration);
+  osc.start(t0);
+  osc.stop(t0 + duration);
+}
+
+function playSignal(type) {
+  const ctx = getAudio();
+  const now = ctx.currentTime;
+  if (type === 'short')  { playTone(660, 0.65, now); }
+  if (type === 'long')   { playTone(440, 3.0,  now); }
+  if (type === 'double') { playTone(660, 0.65, now); playTone(660, 0.65, now + 0.95); }
+  const el = document.querySelector('.signal-display');
+  if (el) { el.classList.remove('firing'); void el.offsetWidth; el.classList.add('firing'); }
+}
+
+// ════════════════════════════════════════════════════
+// TIMER STATE
+// ════════════════════════════════════════════════════
+
+let currentSecond = -360;
+let isRunning     = false;
+let timerInterval = null;
+let firedSteps    = new Set();
+let recordedTimes = [];
+
+function formatChrono(s) {
+  if (s === 0) return "00:00";
+  const sign = s < 0 ? "−" : "+";
+  const abs  = Math.abs(s);
+  return `${sign}${String(Math.floor(abs / 60)).padStart(2,'0')}:${String(abs % 60).padStart(2,'0')}`;
+}
+
+function formatDuration(s) {
+  return `${String(Math.floor(s / 60)).padStart(2,'0')}:${String(s % 60).padStart(2,'0')}`;
+}
+
+function getCurrentStep() {
+  return [...STEPS].reverse().find(s => currentSecond >= s.triggerSecond) || null;
+}
+
+function getNextStep() {
+  return STEPS.find(s => s.triggerSecond > currentSecond) || null;
+}
+
+function tick() { currentSecond++; checkSignal(); render(); }
+
+function checkSignal() {
+  const step = STEPS.find(s => s.triggerSecond === currentSecond);
+  if (step && !firedSteps.has(step.triggerSecond)) {
+    firedSteps.add(step.triggerSecond);
+    playSignal(step.signal);
+  }
+}
+
+function toggleTimer() { isRunning ? pauseTimer() : startTimer(); }
+
+function startTimer() {
+  if (audioCtx?.state === 'suspended') audioCtx.resume();
+  getAudio();
+  isRunning = true;
+  document.getElementById('btn-startstop').textContent = '⏸ Pause';
+  document.getElementById('status-dot').style.background = 'var(--green)';
+  checkSignal();
+  timerInterval = setInterval(tick, 1000);
+  render();
+}
+
+function pauseTimer() {
+  isRunning = false;
+  clearInterval(timerInterval);
+  document.getElementById('btn-startstop').textContent = '▶ Reprendre';
+  document.getElementById('status-dot').style.background = 'var(--gold)';
+  render();
+}
+
+function resetTimer() {
+  pauseTimer();
+  currentSecond = -360;
+  firedSteps.clear();
+  recordedTimes = [];
+  document.getElementById('btn-startstop').textContent = 'Démarrer';
+  document.getElementById('status-dot').style.background = 'var(--text-sec)';
+  render();
+}
+
+function recordTime() {
+  recordedTimes.unshift({ index: recordedTimes.length + 1, second: currentSecond });
+  renderTimes();
+}
+
+// ════════════════════════════════════════════════════
+// RENDER HELPERS
+// ════════════════════════════════════════════════════
+
+function morseHTML(type) {
+  if (type === 'short')  return `<div class="morse"><div class="morse-dot"></div></div>`;
+  if (type === 'long')   return `<div class="morse"><div class="morse-dash"></div></div>`;
+  if (type === 'double') return `<div class="morse"><div class="morse-dot"></div><div class="morse-dot"></div></div>`;
+  return '';
+}
+
+function signalLabel(type) {
+  return { short: 'Court', long: 'Long', double: 'Double', none: 'Aucun' }[type] || type;
+}
+
+function flagImgHTML(flagId, size = 'large') {
+  const flag = FLAGS[flagId];
+  const waving = isRunning ? 'waving' : '';
+  if (size === 'large') {
+    return `<div class="flag-display">
+      <div class="flag-pole"></div>
+      <div class="flag-img-wrap ${waving}">
+        <img src="${flag.img}" alt="${flag.name}" />
+      </div>
+    </div>`;
+  }
+  return `<div class="flag-img-wrap" style="width:80px;height:53px">
+    <img src="${flag.img}" alt="${flag.name}" />
+  </div>`;
+}
+
+// ════════════════════════════════════════════════════
+// RENDER
+// ════════════════════════════════════════════════════
+
+function render() {
+  renderChrono();
+  renderCurrentStep();
+  renderNextAction();
+  renderTimes();
+}
+
+function renderChrono() {
+  const el = document.getElementById('chrono-display');
+  el.textContent = formatChrono(currentSecond);
+  el.className = 'chrono-main ' + (
+    !isRunning && currentSecond === -360 ? 'idle' :
+    currentSecond < 0 ? 'pre' : 'racing'
+  );
+  const sub = document.getElementById('chrono-sub');
+  sub.textContent =
+    (!isRunning && currentSecond === -360) ? 'Prêt à démarrer' :
+    !isRunning                             ? 'En pause' :
+    currentSecond < 0                      ? 'Avant départ' :
+                                             'Course en cours';
+}
+
+function renderCurrentStep() {
+  const step = getCurrentStep();
+  const el   = document.getElementById('current-step-content');
+  if (!step) {
+    el.innerHTML = `<div class="step-current">
+      <div class="step-dot" style="background:var(--text-sec);box-shadow:none;margin-top:4px"></div>
+      <div><div class="step-title">En attente</div>
+      <div class="step-meta">La procédure démarre à −06:00</div></div>
+    </div>`;
+    return;
+  }
+  const flag = FLAGS[step.flagId];
+  const actionBadge = step.action === 'raise'
+    ? `<span class="badge badge-raise">↑ Hisser</span>`
+    : `<span class="badge badge-lower">↓ Affaler</span>`;
+  const sigBadge = `<span class="badge badge-signal">${signalLabel(step.signal)}</span>`;
+  el.innerHTML = `<div class="step-current">
+    <div class="step-dot" style="margin-top:4px"></div>
+    <div style="flex:1">
+      <div class="step-title">${step.title}</div>
+      <div class="step-meta">${flag.name}</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">${actionBadge}${sigBadge}</div>
+    </div>
+  </div>`;
+}
+
+function renderNextAction() {
+  const next       = getNextStep();
+  const countdownEl = document.getElementById('next-countdown');
+  const contentEl   = document.getElementById('next-action-content');
+
+  if (!next) {
+    countdownEl.textContent = '—';
+    contentEl.innerHTML = `<div class="race-started">
+      <div class="race-started-icon">🏁</div>
+      <div class="race-started-title">Course lancée !</div>
+      <div class="race-started-sub">Enregistrez les temps d'arrivée avec le bouton ⏱</div>
+    </div>`;
+    return;
+  }
+
+  const secsUntil = Math.max(0, next.triggerSecond - currentSecond);
+  countdownEl.textContent = formatDuration(secsUntil);
+
+  const flag        = FLAGS[next.flagId];
+  const actionLabel = next.action === 'raise' ? '↑ Hisser' : '↓ Affaler';
+  const actionClass = next.action === 'raise' ? 'badge-raise' : 'badge-lower';
+
+  contentEl.innerHTML = `
+    <div class="next-flag-area">
+      ${flagImgHTML(next.flagId, 'large')}
+      <div class="next-flag-info">
+        <div class="next-flag-name">${flag.name}</div>
+        <div class="next-flag-desc">${flag.description}</div>
+        <div><span class="badge ${actionClass}">${actionLabel}</span></div>
+        <div class="signal-display">
+          ${morseHTML(next.signal)}
+          <span class="signal-label">Signal ${signalLabel(next.signal)}</span>
+        </div>
+        ${next.detail ? `<div class="next-step-detail">${next.detail}</div>` : ''}
+      </div>
+    </div>`;
+}
+
+function renderTimes() {
+  const el = document.getElementById('times-list');
+  if (!recordedTimes.length) {
+    el.innerHTML = '<div class="time-empty">Aucun temps enregistré</div>';
+    return;
+  }
+  el.innerHTML = recordedTimes.map((t, i) => `
+    <div class="time-item">
+      <span class="time-rank">${['🥇','🥈','🥉'][i] ?? `#${recordedTimes.length - i}`}</span>
+      <span class="time-val">${formatChrono(t.second)}</span>
+    </div>`).join('');
+}
+
+// ════════════════════════════════════════════════════
+// FLAGS GRID
+// ════════════════════════════════════════════════════
+
+function buildFlagsGrid() {
+  document.getElementById('flags-grid').innerHTML = FLAGS_GRID_ORDER.map(id => {
+    const f = FLAGS[id];
+    const sigHTML = f.signal && f.signal !== 'none'
+      ? `<div class="flag-card-signal">${morseHTML(f.signal)}<span>${signalLabel(f.signal)}</span></div>`
+      : '';
+    return `<div class="flag-card">
+      <div class="flag-card-img"><img src="${f.img}" alt="${f.name}" /></div>
+      <div class="flag-card-body">
+        <div class="flag-card-name">${f.name}</div>
+        <div class="flag-card-desc">${f.description}</div>
+        ${sigHTML}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ════════════════════════════════════════════════════
+// TABS
+// ════════════════════════════════════════════════════
+
+function switchTab(tab) {
+  document.querySelectorAll('.tab-btn').forEach((b, i) =>
+    b.classList.toggle('active', (i === 0) === (tab === 'procedure'))
+  );
+  document.getElementById('view-procedure').classList.toggle('active', tab === 'procedure');
+  document.getElementById('view-flags').classList.toggle('active', tab === 'flags');
+}
+
+// ════════════════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════════════════
+
+buildFlagsGrid();
+render();
+</script>
+</body>
+</html>
