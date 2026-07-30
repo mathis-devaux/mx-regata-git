@@ -509,6 +509,8 @@ const STEPS = [
   { triggerSecond: -240, title: "Signal préparatoire",    flagId: "prep",  action: "raise", signal: "short",  detail: "Hissez le pavillon préparatoire choisi." },
   { triggerSecond:  -60, title: "Minute finale",          flagId: "prep",  action: "lower", signal: "long",   detail: "Affalez le pavillon préparatoire. Signal long." },
   { triggerSecond:    0, title: "DÉPART",                 flagId: "class", action: "lower", signal: "short",  detail: "Affalez le pavillon de classe. Départ lancé !" },
+  { triggerSecond:    2, title: "Rappel individuel",                 flagId: "x", action: "raise", signal: "short",  detail: "Si un/des concurents identifiables volent le départ, hissez le pavillon de rappel individuel." },
+  { triggerSecond:    30, title: "Rappel général",                 flagId: "sub1", action: "raise", signal: "double",  detail: "Si un/des concurents non-identifiables volent le départ, hissez le pavillon de rappel général." },
 ];
 
 // ════════════════════════════════════════════════════
