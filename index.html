@@ -492,13 +492,19 @@ const FLAGS = {
     description: "À terre : avis affiché. En mer : approchez le bateau comité pour recevoir des instructions.",
     signal: "none",
   },
+  annul: {
+    name: "N sur A - Annulation",
+    img: "flags/flag_n_a.png",
+    description: "Annulation d'une course en cours. Plus de départ aujourd'hui",
+    signal: "triple",
+  },
 };
 
 // FLAGS shown in the reference grid (all except 'prep' which is a composite)
-const FLAGS_GRID_ORDER = ['ap','class','p','i','z','black','blue','x','sub1','y','l'];
+const FLAGS_GRID_ORDER = ['ap','class','p','i','z','black','blue','x','sub1','y','l','annul'];
 
 const STEPS = [
-  { triggerSecond: -359, title: "Début procédure",       flagId: "ap",    action: "lower", signal: "double", detail: "Affalez l'aperçu — 6 minutes avant le départ." },
+  { triggerSecond: -359, title: "Début procédure",       flagId: "ap",    action: "lower", signal: "short", detail: "Affalez l'aperçu — 6 minutes avant le départ." },
   { triggerSecond: -300, title: "Signal d'avertissement", flagId: "class", action: "raise", signal: "short",  detail: "Hissez le pavillon de classe ou de club." },
   { triggerSecond: -240, title: "Signal préparatoire",    flagId: "prep",  action: "raise", signal: "short",  detail: "Hissez le pavillon préparatoire choisi." },
   { triggerSecond:  -60, title: "Minute finale",          flagId: "prep",  action: "lower", signal: "long",   detail: "Affalez le pavillon préparatoire. Signal long." },
@@ -538,6 +544,7 @@ function playSignal(type) {
   if (type === 'short')  { playTone(660, 0.65, now); }
   if (type === 'long')   { playTone(440, 3.0,  now); }
   if (type === 'double') { playTone(660, 0.65, now); playTone(660, 0.65, now + 0.95); }
+  if (type === 'triple') { playTone(660, 0.65, now); playTone(660, 0.65, now + 0.95); playTone(660, 0.65, now + 1.9);}
   const el = document.querySelector('.signal-display');
   if (el) { el.classList.remove('firing'); void el.offsetWidth; el.classList.add('firing'); }
 }
